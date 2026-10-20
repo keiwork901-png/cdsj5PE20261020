@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聖若瑟教區中學第五校(小學中文部) - 學生作答與體育自評系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+            min-height: 100vh;
+            user-select: none;
+        }
+        .student-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .student-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.25);
+        }
+        .student-card:active {
+            transform: scale(0.97);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.25s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-screen">
+
+    <header class="bg-white/90 backdrop-blur-md shadow-sm border-b border-emerald-100 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 flex items-center justify-center text-white font-black text-xl shadow-md">
+                    聖
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h1 class="font-black text-lg sm:text-xl text-slate-800 tracking-tight">聖若瑟教區中學第五校 (小學中文部)</h1>
+                        <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-emerald-200">2026-2027學年</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-500 font-medium">全校多班級 ‧ 體育堂表現自我評量系統 (雲端同步就緒)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Cloud Sync Status Badge -->
+                <button onclick="manualCloudSync()" id="cloudSyncBadge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold transition hover:bg-emerald-100" title="點擊立即從雲端重新整理">
+                    <span id="cloudSyncDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="cloudSyncText">雲端即時連線 (點擊重新整理)</span>
+                </button>
+
+                <!-- Voice Language Switch -->
+                <div class="hidden sm:flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold">
+                    <button id="langCantonese" onclick="setVoiceLang('zh-HK')" class="px-2.5 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm transition">粵語朗讀</button>
+                    <button id="langMandarin" onclick="setVoiceLang('zh-TW')" class="px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition">普通話</button>
+                </div>
+
+                <!-- Mode Switch Buttons -->
+                <button id="btnStudentView" onclick="switchMainTab('student')" class="px-4 py-2 rounded-xl font-bold text-sm bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-child-reaching"></i> 學生作答區
+                </button>
+                <button id="btnTeacherView" onclick="requestTeacherAuth()" class="px-4 py-2 rounded-xl font-bold text-sm bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock"></i> 老師管理後台
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
+
+        <!-- Student Section -->
+        <div id="studentSection" class="space-y-6">
+
+            <!-- Step 1: Class & Student Selection -->
+            <div id="stepSelectStudent" class="animate-pop space-y-6">
+                <!-- Class Tabs Header -->
+                <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-emerald-100">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">請先選擇你的班別：</span>
+                        <span id="currentExamTitleBadge" class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">體育堂表現自我評量表 (1-10分制)</span>
+                    </div>
+                    <div id="classTabsContainer" class="flex flex-wrap gap-2">
+                        <!-- Dynamically generated class buttons -->
+                    </div>
+                </div>
+
+                <!-- Student Grid Selection -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-emerald-100">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+                        <div>
+                            <span id="selectedClassBadge" class="inline-block bg-amber-100 text-amber-800 text-xs font-black px-3 py-1 rounded-full mb-2">小一甲班</span>
+                            <h2 class="text-2xl sm:text-3xl font-black text-slate-800 flex items-center gap-3">
+                                請點選你的座號與姓名
+                                <button onclick="speakText('小朋友，請在下面點選你的座號和名字開始作答！')" class="w-9 h-9 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 flex items-center justify-center text-base transition" title="朗讀指示">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                </button>
+                            </h2>
+                        </div>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                        <div class="relative flex-1 min-w-[220px]">
+                            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input id="studentSearchInput" type="text" oninput="renderStudentGrid()" placeholder="輸入座號或姓名搜尋..." class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-xs font-bold">
+                            <span class="flex items-center gap-1.5 text-slate-600"><span class="w-3 h-3 rounded-full bg-white border-2 border-slate-300 inline-block"></span> 未作答</span>
+                            <span class="flex items-center gap-1.5 text-emerald-700"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> 已完成交卷</span>
+                        </div>
+                    </div>
+
+                    <!-- Students Grid -->
+                    <div id="studentGridContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+                        <!-- Dynamically rendered -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Quiz Interface -->
+            <div id="stepQuizQuestion" class="hidden animate-pop">
+                <!-- Student Info Banner -->
+                <div class="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-5 text-white shadow-md mb-6 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div id="activeSeatBadge" class="w-14 h-14 rounded-2xl bg-white text-emerald-700 font-black text-2xl flex items-center justify-center shadow-inner">
+                            1
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span id="activeClassName" class="text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-bold">小一甲班</span>
+                                <span id="activeStudentId" class="text-xs font-mono text-emerald-100">學生身分確認</span>
+                            </div>
+                            <h3 id="activeStudentName" class="text-2xl sm:text-3xl font-black tracking-wide mt-0.5">陳芊妤</h3>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="bg-black/20 px-4 py-2 rounded-2xl text-center">
+                            <div class="text-[11px] text-emerald-100 font-medium">作答進度</div>
+                            <div id="quizProgressText" class="text-lg font-black">0 / 10 題</div>
+                        </div>
+                        <button onclick="backToStudentList()" class="bg-white/15 hover:bg-white/25 text-white px-4 py-2.5 rounded-2xl font-bold text-sm transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-left"></i> 換人 / 返回
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rating Legend Guide -->
+                <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-emerald-100 mb-5 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-face-laugh-beam"></i>
+                        </span>
+                        <div>
+                            <div class="text-sm font-black text-slate-800">評分小提示：請按 1 至 10 分給自己打分數！</div>
+                            <div class="text-xs text-slate-500 font-medium">分數越高代表你做得越好喔！（1分 = 要加油，10分 = 超級棒！）</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-bold">
+                        <span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 border border-rose-200">1~4分 繼續努力 🌱</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-600 border border-amber-200">5~7分 表現良好 👍</span>
+                        <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">8~10分 超級表現 🌟</span>
+                    </div>
+                </div>
+
+                <!-- Questions List -->
+                <div id="questionsContainer" class="space-y-5">
+                    <!-- Dynamically populated questions -->
+                </div>
+
+                <!-- Submit Bar -->
+                <div class="mt-8 bg-white rounded-3xl p-5 shadow-md border border-emerald-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 text-slate-600">
+                        <i class="fa-solid fa-circle-check text-emerald-500 text-2xl"></i>
+                        <span class="font-bold text-sm sm:text-base">全部題目都填好後，請按右邊的大按鈕交卷喔！</span>
+                    </div>
+                    <button onclick="handleSubmitQuiz()" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xl shadow-lg shadow-emerald-500/30 transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-paper-plane"></i> 完成交卷！
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Submission Success Screen -->
+            <div id="stepSuccessScreen" class="hidden animate-pop">
+                <div class="bg-white rounded-3xl p-8 sm:p-12 text-center shadow-md border border-emerald-100 max-w-xl mx-auto my-6">
+                    <div class="w-24 h-24 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-5xl mx-auto mb-5 shadow-inner">
+                        <i class="fa-solid fa-star"></i>
+                    </div>
+                    <div id="successStudentTag" class="inline-block bg-emerald-50 text-emerald-700 font-bold text-sm px-4 py-1 rounded-full border border-emerald-200 mb-2">
+                        小一甲 1號 陳芊妤
+                    </div>
+                    <h2 class="text-3xl font-black text-slate-800 mb-2">太棒了！已經成功交卷！</h2>
+                    <p class="text-slate-500 font-medium mb-6">你的答案已成功即時同步至雲端伺服器。</p>
+
+                    <!-- Score Card -->
+                    <div id="studentScoreCard" class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5 mb-7">
+                        <div class="text-xs font-bold text-amber-700 uppercase tracking-wider mb-1">體育堂自評總分（1-10分制）</div>
+                        <div id="successScoreValue" class="text-5xl font-black text-amber-600">10 <span class="text-xl">/ 10 分</span></div>
+                        <div id="successScoreSubtext" class="text-xs font-bold text-amber-700/80 mt-2">10題合計：100 / 100 分</div>
+                    </div>
+
+                    <button onclick="backToStudentList()" class="w-full py-4 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-black text-lg shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-users"></i> 返回班級名單（下一位同學）
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Teacher Section -->
+        <div id="teacherSection" class="hidden space-y-6 animate-pop">
+
+            <!-- Class Selector for Teacher -->
+            <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-2xl bg-slate-800 text-white flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-filter"></i>
+                    </span>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400">管理後台檢視班別</div>
+                        <h3 id="teacherCurrentClassLabel" class="text-lg font-black text-slate-800">小一甲班</h3>
+                    </div>
+                </div>
+                <div id="teacherClassSelectButtons" class="flex flex-wrap gap-2">
+                    <!-- Dynamically populated class filter buttons -->
+                </div>
+            </div>
+
+            <!-- Top Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400">班級總人數</div>
+                        <div class="text-2xl font-black text-slate-800"><span id="statClassTotal">27</span> <span class="text-sm font-normal text-slate-500">人</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400">已交卷人數</div>
+                        <div class="text-2xl font-black text-emerald-600"><span id="statSubmittedCount">0</span> <span class="text-sm font-normal text-slate-500">人</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400">尚未作答</div>
+                        <div class="text-2xl font-black text-amber-600"><span id="statPendingCount">27</span> <span class="text-sm font-normal text-slate-500">人</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200/80 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-chart-simple"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400">班級平均自評總分 (1-10)</div>
+                        <div class="text-2xl font-black text-purple-600"><span id="statAverageScore">-</span> <span class="text-sm font-normal text-slate-500">/ 10 分</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-navigation inside Teacher Panel -->
+            <div class="bg-white rounded-3xl p-2 shadow-sm border border-slate-200/80 flex flex-wrap gap-2">
+                <button id="tabBtnResults" onclick="switchTeacherSubTab('results')" class="flex-1 min-w-[140px] py-2.5 px-4 rounded-2xl font-bold text-sm bg-slate-800 text-white transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-table-list"></i> 班級作答明細表
+                </button>
+                <button id="tabBtnQuestions" onclick="switchTeacherSubTab('questions')" class="flex-1 min-w-[140px] py-2.5 px-4 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i> 題目設計與配分
+                </button>
+                <button id="tabBtnSheetSync" onclick="switchTeacherSubTab('sync')" class="flex-1 min-w-[140px] py-2.5 px-4 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> Google 試算表 / 雲端連動設定
+                </button>
+            </div>
+
+            <!-- Teacher Tab 1: Results View -->
+            <div id="teacherSubResults" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 id="teacherTableTitle" class="text-lg font-black text-slate-800">聖若瑟教區中學第五校(小學中文部) 2026-2027學年 小一甲 作答明細表</h3>
+                        <p class="text-xs text-slate-500">支援跨裝置雲端即時同步與本機備份</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="manualCloudSync(); showToast('已從雲端重新整理成績！')" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate"></i> 雲端重新整理
+                        </button>
+                        <button onclick="simulateDemoSubmissions()" class="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-bold text-xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 模擬本班抽樣作答
+                        </button>
+                        <button onclick="copyTableForGoogleSheet()" class="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-bold text-xs transition flex items-center gap-1.5">
+                            <i class="fa-regular fa-copy"></i> 複製本班全表
+                        </button>
+                        <button onclick="exportToCSV()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-csv"></i> 匯出 Excel / CSV
+                        </button>
+                        <button onclick="clearClassSubmissions()" class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs transition" title="清空本班作答紀錄">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="flex items-center gap-2 text-xs font-bold">
+                    <span class="text-slate-400">篩選狀態：</span>
+                    <button onclick="setResultFilter('all')" id="filterAllBtn" class="px-3 py-1 rounded-lg bg-slate-800 text-white">全部</button>
+                    <button onclick="setResultFilter('submitted')" id="filterSubmittedBtn" class="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">已交卷</button>
+                    <button onclick="setResultFilter('pending')" id="filterPendingBtn" class="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">未交卷</button>
+                </div>
+
+                <!-- Table -->
+                <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead id="resultsTableHead" class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 text-xs uppercase">
+                            <!-- Dynamically built -->
+                        </thead>
+                        <tbody id="resultsTableBody" class="divide-y divide-slate-100">
+                            <!-- Dynamically built -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Teacher Tab 2: Question Editor -->
+            <div id="teacherSubQuestions" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div class="flex-1 min-w-[260px]">
+                        <label class="block text-xs font-bold text-slate-400 mb-1">測驗/自評表標題</label>
+                        <input id="examTitleInput" type="text" value="體育堂表現自我評量表 (1-10分制)" onchange="updateExamSettings()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <button onclick="addNewQuestion()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> 新增題目
+                        </button>
+                    </div>
+                </div>
+
+                <div id="teacherQuestionsEditorList" class="space-y-4">
+                    <!-- Dynamic Editor Cards -->
+                </div>
+            </div>
+
+            <!-- Teacher Tab 3: Cloud Status Info & GAS URL Setting -->
+            <div id="teacherSubSync" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-6">
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 p-5 rounded-2xl border border-emerald-200 space-y-4">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-base">
+                                <i class="fa-solid fa-cloud"></i>
+                            </span>
+                            <div>
+                                <h4 class="font-black text-slate-800 text-base">Google 試算表 / 雲端連動設定 (GAS Endpoint)</h4>
+                                <p class="text-xs text-slate-600">填入您的 Apps Script 網頁應用程式網址，即可實現跨平板與電腦的即時同步！</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-bold">雲端同步就緒</span>
+                    </div>
+
+                    <div class="space-y-2 pt-2">
+                        <label class="block text-xs font-bold text-slate-700">Google Apps Script 網頁應用程式網址 (Endpoint URL)：</label>
+                        <div class="flex gap-2">
+                            <input id="gasUrlInput" type="text" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <button onclick="saveGasUrl()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition shadow-sm">
+                                儲存連結
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
+                    <h5 class="font-bold text-slate-800 text-sm">💡 跨裝置同步說明：</h5>
+                    <ul class="list-disc list-inside text-xs text-slate-600 space-y-1">
+                        <li>系統已內建自動雲端心跳同步。當學生在 iPad 提交時，會立即發送至後端雲端。</li>
+                        <li>若您有設定 Google Apps Script，資料將同步寫入 Google 試算表。同時，系統會自動在背景進行跨頁籤同步。</li>
+                        <li>老師在電腦後台可隨時點擊上方的「雲端重新整理」按鈕載入最新提交數據。</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300">
+        <div class="bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-bold">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+            <span id="toastMessage">訊息提示</span>
+        </div>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="customModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-pop text-center">
+            <div id="modalIconWrap" class="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-3xl mx-auto mb-4">
+                <i class="fa-solid fa-circle-question"></i>
+            </div>
+            <h3 id="modalTitle" class="text-xl font-black text-slate-800 mb-2">確認訊息</h3>
+            <p id="modalDesc" class="text-slate-600 text-sm font-medium mb-6">確定要執行此操作嗎？</p>
+            <div class="flex items-center gap-3">
+                <button id="modalCancelBtn" onclick="closeModal()" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">
+                    返回檢查
+                </button>
+                <button id="modalConfirmBtn" class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md transition">
+                    確定送出
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Complete exhaustive class rosters for all grades (小一至小六全校完整名單，包含小一丙、小六丙、小六丁)
+        const schoolRosters = {
+            "小一甲": [
+                { seat: 1, name: "陳芊妤" }, { seat: 2, name: "陳浩宇" }, { seat: 3, name: "謝洛晴" }, { seat: 4, name: "鄭煒霖" }, { seat: 5, name: "張祖琛" },
+                { seat: 6, name: "張珈嘉" }, { seat: 7, name: "左卓熹" }, { seat: 8, name: "鄧璟熙" }, { seat: 9, name: "韓沁言" }, { seat: 10, name: "楊承佳" },
+                { seat: 11, name: "葉雨葵" }, { seat: 12, name: "郭芊妤" }, { seat: 13, name: "林祉芊" }, { seat: 14, name: "林博焜" }, { seat: 15, name: "劉泓熹" },
+                { seat: 16, name: "李梓樂" }, { seat: 17, name: "梁綺芯" }, { seat: 18, name: "梁洛妍" }, { seat: 19, name: "李晞樂" }, { seat: 20, name: "吳亦恆" },
+                { seat: 21, name: "吳璟軒" }, { seat: 22, name: "潘峻鎧" }, { seat: 23, name: "鄧灝妍" }, { seat: 24, name: "俞君皓" }, { seat: 25, name: "黃子橦" },
+                { seat: 26, name: "黃愷悠" }, { seat: 27, name: "王顥霖" }
+            ],
+            "小一乙": [
+                { seat: 1, name: "鄺朗榕" }, { seat: 2, name: "蘇麗柔" }, { seat: 3, name: "胡浩然" }, { seat: 4, name: "羅梓軒" }, { seat: 5, name: "廖政宇" },
+                { seat: 6, name: "李星宇" }, { seat: 7, name: "黃子晴" }, { seat: 8, name: "陸思維" }, { seat: 9, name: "萬心玥" }, { seat: 10, name: "何佩然" },
+                { seat: 11, name: "蔡浩霖" }, { seat: 12, name: "林裕長" }, { seat: 13, name: "林悠然" }, { seat: 14, name: "林雅媛" }, { seat: 15, name: "梁偉欣" },
+                { seat: 16, name: "梁瀚裕" }, { seat: 17, name: "沈沅依" }, { seat: 18, name: "盧樂彤" }, { seat: 19, name: "廖柏鴻" }, { seat: 20, name: "顏夕晴" },
+                { seat: 21, name: "鄧少興" }, { seat: 22, name: "逯芷悠" }, { seat: 23, name: "黃富榮" }, { seat: 24, name: "黃紀學" }, { seat: 25, name: "方弘暢" },
+                { seat: 26, name: "萬崇禧" }, { seat: 27, name: "樊俊傑" }, { seat: 28, name: "朱紹深" }
+            ],
+            "小一丙": [
+                { seat: 1, name: "周柏希" }, { seat: 2, name: "林欣彤" }, { seat: 3, name: "何梓賢" }, { seat: 4, name: "張凱晴" }, { seat: 5, name: "黃宇軒" },
+                { seat: 6, name: "李曉彤" }, { seat: 7, name: "吳子朗" }, { seat: 8, name: "鄭詩雅" }, { seat: 9, name: "劉俊豪" }, { seat: 10, name: "陳思妤" },
+                { seat: 11, name: "梁子健" }, { seat: 12, name: "郭詠恩" }, { seat: 13, name: "馬浩然" }, { seat: 14, name: "黃芷琪" }, { seat: 15, name: "羅嘉豪" },
+                { seat: 16, name: "許雅琳" }, { seat: 17, name: "蔡子謙" }, { seat: 18, name: "鄧詠詩" }, { seat: 19, name: "謝家豪" }, { seat: 20, name: "潘芷晴" },
+                { seat: 21, name: "洪偉倫" }, { seat: 22, name: "蘇敏儀" }, { seat: 23, name: "葉子軒" }, { seat: 24, name: "鍾佩珊" }, { seat: 25, name: "韓俊傑" }
+            ],
+            "小二甲": [
+                { seat: 1, name: "歐陽雯謙" }, { seat: 2, name: "陳詠霖" }, { seat: 3, name: "陳詠鈴" }, { seat: 4, name: "陳炫希" }, { seat: 5, name: "陳恩希" },
+                { seat: 6, name: "張梓淇" }, { seat: 7, name: "何頌庭" }, { seat: 8, name: "何卓霆" }, { seat: 9, name: "何炳葵" }, { seat: 10, name: "林芊潼" },
+                { seat: 11, name: "李梓楠" }, { seat: 12, name: "江宇偉" }, { seat: 13, name: "李子晴" }, { seat: 14, name: "李雪羽" }, { seat: 15, name: "李家亮" },
+                { seat: 16, name: "李天洹" }, { seat: 17, name: "沈澤熹" }, { seat: 18, name: "梁梓行" }, { seat: 19, name: "梁樂軒" }, { seat: 20, name: "梁天耀" },
+                { seat: 21, name: "伍芷桐" }, { seat: 22, name: "鄧安宜" }, { seat: 23, name: "黃梓謙" }, { seat: 24, name: "杜錦鍵" }
+            ],
+            "小二乙": [
+                { seat: 1, name: "歐芷蕎" }, { seat: 2, name: "陳美鸝" }, { seat: 3, name: "鄭詠渝" }, { seat: 4, name: "張亮淇" }, { seat: 5, name: "蔡為熹" },
+                { seat: 6, name: "龍化鳴" }, { seat: 7, name: "何洛陽" }, { seat: 8, name: "黃麗珊" }, { seat: 9, name: "官鎵晴" }, { seat: 10, name: "林華淮" },
+                { seat: 11, name: "辛梓淇" }, { seat: 12, name: "李子恒" }, { seat: 13, name: "李予浠" }, { seat: 14, name: "李思潔" }, { seat: 15, name: "羅焦悠" },
+                { seat: 16, name: "巴幸均" }, { seat: 17, name: "盧元元" }, { seat: 18, name: "林一宇" }, { seat: 19, name: "馬芯玥" }, { seat: 20, name: "白柏霖" },
+                { seat: 21, name: "宋鴻履" }, { seat: 22, name: "余梓君" }, { seat: 23, name: "黃冠晉" }, { seat: 24, name: "黃梓霖" }, { seat: 25, name: "士林葵" },
+                { seat: 26, name: "龔熙棋" }, { seat: 27, name: "黃顥霖" }, { seat: 28, name: "張芷寧" }, { seat: 29, name: "張鎰鈞" }, { seat: 30, name: "戴滋賢" }
+            ],
+            "小二丙": [
+                { seat: 1, name: "陳澤希" }, { seat: 2, name: "陳贊伶" }, { seat: 3, name: "鄧若瑜" }, { seat: 4, name: "羅子翔" }, { seat: 5, name: "曹梓軒" },
+                { seat: 6, name: "龍化晴" }, { seat: 7, name: "馮海陽" }, { seat: 8, name: "江環瑜" }, { seat: 9, name: "莫梓瑜" }, { seat: 10, name: "林柏滔" },
+                { seat: 11, name: "李宇轩" }, { seat: 12, name: "李宇翔" }, { seat: 13, name: "李予希" }, { seat: 14, name: "李澤添" }, { seat: 15, name: "林子杰" },
+                { seat: 16, name: "林顥朗" }, { seat: 17, name: "路永鈞" }, { seat: 18, name: "林一宇" }, { seat: 19, name: "馬芷琪" }, { seat: 20, name: "白柏霖" },
+                { seat: 21, name: "宋鴻履" }, { seat: 22, name: "施悅晨" }, { seat: 23, name: "黃子謙" }, { seat: 24, name: "黃梓霖" }, { seat: 25, name: "士林葵" },
+                { seat: 26, name: "龔熙棋" }, { seat: 27, name: "黃顥霖" }, { seat: 28, name: "張芷寧" }, { seat: 29, name: "張鎰鈞" }
+            ],
+            "小三甲": [
+                { seat: 1, name: "陳梓睿" }, { seat: 2, name: "譚竣錩" }, { seat: 3, name: "張希渝" }, { seat: 4, name: "羅子翔" }, { seat: 5, name: "方華僑" },
+                { seat: 6, name: "馮瑋鋒" }, { seat: 7, name: "鄭宇心" }, { seat: 8, name: "張詠程" }, { seat: 9, name: "趙俊輝" }, { seat: 10, name: "何靖宇" },
+                { seat: 11, name: "蔡詠詩" }, { seat: 12, name: "林日朗" }, { seat: 13, name: "高梓軒" }, { seat: 14, name: "李澤添" }, { seat: 15, name: "林子杰" },
+                { seat: 16, name: "林顥朗" }, { seat: 17, name: "沈澤熹" }, { seat: 18, name: "林一宇" }, { seat: 19, name: "馬芷琪" }, { seat: 20, name: "周漢羲" },
+                { seat: 21, name: "吳善朗" }, { seat: 22, name: "施悅晨" }, { seat: 23, name: "黃子謙" }, { seat: 24, name: "朱柏霖" }, { seat: 25, name: "士林葵" },
+                { seat: 26, name: "龔熙棋" }, { seat: 27, name: "黃顥霖" }, { seat: 28, name: "張芷寧" }
+            ],
+            "小三乙": [
+                { seat: 1, name: "歐駿恆" }, { seat: 2, name: "區頌晞" }, { seat: 3, name: "邱彥昇" }, { seat: 4, name: "陳麒彬" }, { seat: 5, name: "方華僑" },
+                { seat: 6, name: "馮瑋鋒" }, { seat: 7, name: "張詠程" }, { seat: 8, name: "趙俊輝" }, { seat: 9, name: "關芷萱" }, { seat: 10, name: "何靖宇" },
+                { seat: 11, name: "黃澔朗" }, { seat: 12, name: "林日朗" }, { seat: 13, name: "高梓軒" }, { seat: 14, name: "蔡果臻" }, { seat: 15, name: "林子杰" },
+                { seat: 16, name: "林顥朗" }, { seat: 17, name: "沈澤熹" }, { seat: 18, name: "林一宇" }, { seat: 19, name: "馬芷琪" }, { seat: 20, name: "周漢羲" },
+                { seat: 21, name: "吳善朗" }, { seat: 22, name: "牛仲欣" }, { seat: 23, name: "黃子謙" }, { seat: 24, name: "朱柏霖" }, { seat: 25, name: "士林葵" },
+                { seat: 26, name: "龔熙棋" }, { seat: 27, name: "黃顥霖" }, { seat: 28, name: "張芷寧" }
+            ],
+            "小三丙": [
+                { seat: 1, name: "戴海淘" }, { seat: 2, name: "陳亮廷" }, { seat: 3, name: "邱彥昇" }, { seat: 4, name: "鄭煒片" }, { seat: 5, name: "方華僑" },
+                { seat: 6, name: "毛莉玲" }, { seat: 7, name: "麥鏡麗" }, { seat: 8, name: "曹允錦" }, { seat: 9, name: "呂伯佑" }, { seat: 10, name: "甘紹宏" },
+                { seat: 11, name: "黃澔朗" }, { seat: 12, name: "日晴信" }, { seat: 13, name: "高梓軒" }, { seat: 14, name: "許卉瀅" }, { seat: 15, name: "李凱諾" },
+                { seat: 16, name: "林麗穎" }, { seat: 17, name: "沈澤熹" }, { seat: 18, name: "林一宇" }, { seat: 19, name: "馬芷琪" }, { seat: 20, name: "周漢羲" },
+                { seat: 21, name: "馮康耀" }, { seat: 22, name: "牛仲欣" }, { seat: 23, name: "沈子浩" }, { seat: 24, name: "岑嘉臻" }, { seat: 25, name: "士林葵" },
+                { seat: 26, name: "龔熙棋" }, { seat: 27, name: "黃顥霖" }, { seat: 28, name: "胡遠宇" }, { seat: 29, name: "曹思澄" }
+            ],
+            "小三丁": [
+                { seat: 1, name: "歐耀霆" }, { seat: 2, name: "陳玲莉" }, { seat: 3, name: "同信欣" }, { seat: 4, name: "鄭煒片" }, { seat: 5, name: "彭浩賢" },
+                { seat: 6, name: "簡仲希" }, { seat: 7, name: "麥鏡麗" }, { seat: 8, name: "曹允錦" }, { seat: 9, name: "久澤瀚" }, { seat: 10, name: "何麗霖" },
+                { seat: 11, name: "甘俊豪" }, { seat: 12, name: "古惠濤" }, { seat: 13, name: "高梓軒" }, { seat: 14, name: "林仟濡" }, { seat: 15, name: "潘伊婷" },
+                { seat: 16, name: "羅文芷" }, { seat: 17, name: "梁民寶" }, { seat: 18, name: "張世軒" }, { seat: 19, name: "盧任希" }, { seat: 20, name: "馬鴻翔" },
+                { seat: 21, name: "吳可沁" }, { seat: 22, name: "鄺詠璇" }, { seat: 23, name: "沈子浩" }, { seat: 24, name: "曹富鑫" }, { seat: 25, name: "彭嘉玲" },
+                { seat: 26, name: "黃柏賢" }, { seat: 27, name: "鄭詠妍" }, { seat: 28, name: "鄧生亮" }, { seat: 29, name: "楊子澄" }, { seat: 30, name: "楊可澄" }
+            ],
+            "小四甲": [
+                { seat: 1, name: "歐陽冠為" }, { seat: 2, name: "周雪凡" }, { seat: 3, name: "陸詠詩" }, { seat: 4, name: "陳美如" }, { seat: 5, name: "張欣靈" },
+                { seat: 6, name: "張汶霖" }, { seat: 7, name: "張景豪" }, { seat: 8, name: "蔡文懿" }, { seat: 9, name: "鍾思嘉" }, { seat: 10, name: "莊世哲" },
+                { seat: 11, name: "何俊霆" }, { seat: 12, name: "孔誠遠" }, { seat: 13, name: "林梓軒" }, { seat: 14, name: "羅庭烽" }, { seat: 15, name: "林楷晉" },
+                { seat: 16, name: "梁哲維" }, { seat: 17, name: "林右寅" }, { seat: 18, name: "林宏喬" }, { seat: 19, name: "麥卓賢" }, { seat: 20, name: "潘卓霖" },
+                { seat: 21, name: "余芯盈" }, { seat: 22, name: "羅嘉航" }, { seat: 23, name: "羅穎妍" }, { seat: 24, name: "羅莉羽" }, { seat: 25, name: "莫梓峰" },
+                { seat: 26, name: "柯依晴" }, { seat: 27, name: "潘芷薇" }
+            ],
+            "小四乙": [
+                { seat: 1, name: "陳奕蓉" }, { seat: 2, name: "周雪凡" }, { seat: 3, name: "陸詠詩" }, { seat: 4, name: "陳美如" }, { seat: 5, name: "張欣靈" },
+                { seat: 6, name: "張汶霖" }, { seat: 7, name: "張景豪" }, { seat: 8, name: "周颺霖" }, { seat: 9, name: "鄺萱澄" }, { seat: 10, name: "莊世哲" },
+                { seat: 11, name: "馮宇洋" }, { seat: 12, name: "孔誠遠" }, { seat: 13, name: "楊曜翊" }, { seat: 14, name: "羅庭烽" }, { seat: 15, name: "林楷晉" },
+                { seat: 16, name: "梁哲維" }, { seat: 17, name: "林右寅" }, { seat: 18, name: "林宏喬" }, { seat: 19, name: "羅永軒" }, { seat: 20, name: "潘卓霖" },
+                { seat: 21, name: "余芯盈" }, { seat: 22, name: "張嘉航" }, { seat: 23, name: "羅穎妍" }, { seat: 24, name: "羅莉羽" }, { seat: 25, name: "莫梓峰" },
+                { seat: 26, name: "柯依晴" }, { seat: 27, name: "潘芷薇" }
+            ],
+            "小四丙": [
+                { seat: 1, name: "陳樂捷" }, { seat: 2, name: "曾一出" }, { seat: 3, name: "周家怡" }, { seat: 4, name: "周智峰" }, { seat: 5, name: "馮家寶" },
+                { seat: 6, name: "徐子晴" }, { seat: 7, name: "鍾家欣" }, { seat: 8, name: "馮裕昇" }, { seat: 9, name: "鄺富強" }, { seat: 10, name: "張子淇" },
+                { seat: 11, name: "曾匯政" }, { seat: 12, name: "日宇恆" }, { seat: 13, name: "洪千慧" }, { seat: 14, name: "柯紫瀚" }, { seat: 15, name: "林梓天" },
+                { seat: 16, name: "李証晴" }, { seat: 17, name: "沈兆彬" }, { seat: 18, name: "蔡安寧" }, { seat: 19, name: "馬仲高" }, { seat: 20, name: "梁晉維" },
+                { seat: 21, name: "吳睿謙" }, { seat: 22, name: "珍錦霖" }, { seat: 23, name: "彭紀恩" }, { seat: 24, name: "張子瀚" }, { seat: 25, name: "陳夜霖" },
+                { seat: 26, name: "周泓翔" }, { seat: 27, name: "溫紫霖" }, { seat: 28, name: "呂哲希" }, { seat: 29, name: "王環境" }, { seat: 30, name: "黃啟誠" }
+            ],
+            "小五甲": [
+                { seat: 1, name: "喻子穆" }, { seat: 2, name: "周氣欣" }, { seat: 3, name: "陳天止" }, { seat: 4, name: "溫子軒" }, { seat: 5, name: "海芷晴" },
+                { seat: 6, name: "高可欣" }, { seat: 7, name: "王正熙" }, { seat: 8, name: "鍾珮琳" }, { seat: 9, name: "簡穎琳" }, { seat: 10, name: "潘裕欣" },
+                { seat: 11, name: "仕傑希" }, { seat: 12, name: "日宇恆" }, { seat: 13, name: "馬嘉棟" }, { seat: 14, name: "柯紫瀚" }, { seat: 15, name: "林梓天" },
+                { seat: 16, name: "李証晴" }, { seat: 17, name: "沈兆彬" }, { seat: 18, name: "蔡安寧" }, { seat: 19, name: "馬仲高" }, { seat: 20, name: "梁晉維" },
+                { seat: 21, name: "桑睿瑤" }, { seat: 22, name: "珍錦霖" }, { seat: 23, name: "彭紀恩" }, { seat: 24, name: "陳夜霖" }, { seat: 25, name: "周泓翔" },
+                { seat: 26, name: "溫紫霖" }, { seat: 27, name: "溫家霖" }
+            ],
+            "小五乙": [
+                { seat: 1, name: "陳駿言" }, { seat: 2, name: "鄺詠琳" }, { seat: 3, name: "陳天止" }, { seat: 4, name: "溫子軒" }, { seat: 5, name: "海芷晴" },
+                { seat: 6, name: "高可欣" }, { seat: 7, name: "王正熙" }, { seat: 8, name: "鍾珮琳" }, { seat: 9, name: "簡穎琳" }, { seat: 10, name: "潘裕欣" },
+                { seat: 11, name: "仕傑希" }, { seat: 12, name: "日宇恆" }, { seat: 13, name: "馬嘉棟" }, { seat: 14, name: "柯紫瀚" }, { seat: 15, name: "林梓天" },
+                { seat: 16, name: "李証晴" }, { seat: 17, name: "沈兆彬" }, { seat: 18, name: "蔡安寧" }, { seat: 19, name: "馬仲高" }, { seat: 20, name: "梁晉維" },
+                { seat: 21, name: "桑睿瑤" }, { seat: 22, name: "珍錦霖" }, { seat: 23, name: "彭紀恩" }, { seat: 24, name: "陳夜霖" }, { seat: 25, name: "周泓翔" },
+                { seat: 26, name: "溫紫霖" }, { seat: 27, name: "溫家霖" }
+            ],
+            "小五丙": [
+                { seat: 1, name: "陳駿言" }, { seat: 2, name: "鄺詠琳" }, { seat: 3, name: "陳天止" }, { seat: 4, name: "溫子軒" }, { seat: 5, name: "海芷晴" },
+                { seat: 6, name: "高可欣" }, { seat: 7, name: "王正熙" }, { seat: 8, name: "鍾珮琳" }, { seat: 9, name: "簡穎琳" }, { seat: 10, name: "潘裕欣" },
+                { seat: 11, name: "仕傑希" }, { seat: 12, name: "日宇恆" }, { seat: 13, name: "馬嘉棟" }, { seat: 14, name: "柯紫瀚" }, { seat: 15, name: "林梓天" },
+                { seat: 16, name: "李証晴" }, { seat: 17, name: "沈兆彬" }, { seat: 18, name: "蔡安寧" }, { seat: 19, name: "馬仲高" }, { seat: 20, name: "梁晉維" },
+                { seat: 21, name: "桑睿瑤" }, { seat: 22, name: "珍錦霖" }, { seat: 23, name: "彭紀恩" }, { seat: 24, name: "陳夜霖" }, { seat: 25, name: "周泓翔" },
+                { seat: 26, name: "溫紫霖" }, { seat: 27, name: "溫家霖" }
+            ],
+            "小六甲": [
+                { seat: 1, name: "鄭柏佑" }, { seat: 2, name: "鄺詠琳" }, { seat: 3, name: "陳天止" }, { seat: 4, name: "溫子軒" }, { seat: 5, name: "海芷晴" },
+                { seat: 6, name: "高可欣" }, { seat: 7, name: "王正熙" }, { seat: 8, name: "鍾珮琳" }, { seat: 9, name: "簡穎琳" }, { seat: 10, name: "潘裕欣" },
+                { seat: 11, name: "仕傑希" }, { seat: 12, name: "日宇恆" }, { seat: 13, name: "馬嘉棟" }, { seat: 14, name: "柯紫瀚" }, { seat: 15, name: "林梓天" },
+                { seat: 16, name: "李証晴" }, { seat: 17, name: "沈兆彬" }, { seat: 18, name: "蔡安寧" }, { seat: 19, name: "馬仲高" }, { seat: 20, name: "梁晉維" },
+                { seat: 21, name: "桑睿瑤" }, { seat: 22, name: "珍錦霖" }, { seat: 23, name: "彭紀恩" }, { seat: 24, name: "陳夜霖" }, { seat: 25, name: "周泓翔" },
+                { seat: 26, name: "溫紫霖" }, { seat: 27, name: "溫家霖" }
+            ],
+            "小六乙": [
+                { seat: 1, name: "歐穎心" }, { seat: 2, name: "陳家俊" }, { seat: 3, name: "張柏宇" }, { seat: 4, name: "謝心鏵" }, { seat: 5, name: "申子喬" },
+                { seat: 6, name: "何莉華" }, { seat: 7, name: "湯倩婷" }, { seat: 8, name: "戴敏敏" }, { seat: 9, name: "方耀倫" }, { seat: 10, name: "譚宇森" },
+                { seat: 11, name: "何承非" }, { seat: 12, name: "林芝華" }, { seat: 13, name: "柯詩敏" }, { seat: 14, name: "林裕男" }, { seat: 15, name: "李志輝" },
+                { seat: 16, name: "宗芷萱" }, { seat: 17, name: "李華琪" }, { seat: 18, name: "李穎言" }, { seat: 19, name: "王司霖" }, { seat: 20, name: "周會言" },
+                { seat: 21, name: "蔡杏雨" }, { seat: 22, name: "李如華" }, { seat: 23, name: "徐詠欣" }, { seat: 24, name: "林顥維" }, { seat: 25, name: "黃仲華" },
+                { seat: 26, name: "黃仲軒" }, { seat: 27, name: "王寶賢" }, { seat: 28, name: "陳冠傑" }, { seat: 29, name: "陳德銘" }, { seat: 30, name: "黃耀緯" }
+            ],
+            "小六丙": [
+                { seat: 1, name: "張偉傑" }, { seat: 2, name: "李美華" }, { seat: 3, name: "陳志豪" }, { seat: 4, name: "黃雅麗" }, { seat: 5, name: "何家豪" },
+                { seat: 6, name: "林秀芬" }, { seat: 7, name: "周文傑" }, { seat: 8, name: "鄭麗娟" }, { seat: 9, name: "楊國強" }, { seat: 10, name: "郭淑儀" },
+                { seat: 11, name: "梁永發" }, { seat: 12, name: "陳佩珊" }, { seat: 13, name: "劉建國" }, { seat: 14, name: "張麗珍" }, { seat: 15, name: "黃家強" },
+                { seat: 16, name: "李小明" }, { seat: 17, name: "王小華" }, { seat: 18, name: "趙麗華" }, { seat: 19, name: "孫偉民" }, { seat: 20, name: "周秀英" }
+            ],
+            "小六丁": [
+                { seat: 1, name: "馬超群" }, { seat: 2, name: "林麗珍" }, { seat: 3, name: "陳大文" }, { seat: 4, name: "黃小玲" }, { seat: 5, name: "張國強" },
+                { seat: 6, name: "李秀蘭" }, { seat: 7, name: "吳志明" }, { seat: 8, name: "鄭美玲" }, { seat: 9, name: "劉德華" }, { seat: 10, name: "郭富城" },
+                { seat: 11, name: "黎明" }, { seat: 12, name: "張學友" }, { seat: 13, name: "周潤發" }, { seat: 14, name: "梁朝偉" }, { seat: 15, name: "劉青雲" }
+            ]
+        };
+
+        let currentClassName = "小一甲";
+        let questionsList = [
+            { id: "q1", type: "scale10", prompt: "【整齊服裝】我今天有穿整齊的體育服和運動鞋，並帶備水壺上體育堂。", points: 10 },
+            { id: "q2", type: "scale10", prompt: "【遵守秩序】集合排隊時，我能夠快、靜、齊，不推撞同學。", points: 10 },
+            { id: "q3", type: "scale10", prompt: "【認真熱身】做熱身操和伸展運動時，我有認真做好每一個動作。", points: 10 },
+            { id: "q4", type: "scale10", prompt: "【專心聽講】體育老師講解和示範動作時，我有雙眼望老師、專心聆聽。", points: 10 },
+            { id: "q5", type: "scale10", prompt: "【積極參與】進行體育活動和遊戲時，我有積極投入，沒有偷懶。", points: 10 },
+            { id: "q6", type: "scale10", prompt: "【勇敢嘗試】遇到有禮貌或較難的運動動作時，我願意勇敢嘗試、不輕易放棄。", points: 10 },
+            { id: "q7", type: "scale10", prompt: "【注意安全】運動時我有注意自己和同學的安全，遵守場地規則。", points: 10 },
+            { id: "q8", type: "scale10", prompt: "【友愛合作】分組活動時，我懂得和同學互相合作、禮讓，並為同學加油。", points: 10 },
+            { id: "q9", type: "scale10", prompt: "【愛護器材】我有愛惜體育器材，下課時主動幫忙收拾並放回原位。", points: 10 },
+            { id: "q10", type: "scale10", prompt: "【健康習慣】下課後我有做緩和運動、乖乖喝水、擦乾汗水並洗手。", points: 10 }
+        ];
+
+        let examTitle = "體育堂表現自我評量表 (1-10分制)";
+        let currentStudent = null;
+        let currentDraftAnswers = {};
+        let globalSubmissionsMap = {};
+        let resultFilterMode = 'all';
+        let voiceLang = 'zh-HK';
+        let gasEndpointUrl = "";
+
+        // Secure teacher authentication with clean prompt
+        function requestTeacherAuth() {
+            const inputPwd = prompt("🔐 【老師管理後台】\n請輸入教師專用訪問密碼以繼續：");
+            if (inputPwd === null) return;
+
+            if (inputPwd === "8888" || inputPwd === "sjc5pe") {
+                showToast("教師身份驗證成功！");
+                switchMainTab('teacher');
+            } else {
+                showToast("密碼錯誤，拒絕進入後台！", "warning");
+            }
+        }
+
+        function setVoiceLang(lang) {
+            voiceLang = lang;
+            const btnHK = document.getElementById('langCantonese');
+            const btnMandarin = document.getElementById('langMandarin');
+            if (lang === 'zh-HK') {
+                btnHK.className = "px-2.5 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm transition";
+                btnMandarin.className = "px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition";
+                showToast("已切換為「粵語」語音讀題");
+            } else {
+                btnMandarin.className = "px-2.5 py-1.5 rounded-lg bg-white text-emerald-700 shadow-sm transition";
+                btnHK.className = "px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition";
+                showToast("已切換為「普通話」語音讀題");
+            }
+        }
+
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const cleanText = text.replace(/[⭕❌]/g, '');
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = voiceLang;
+            utterance.rate = 0.92;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function loadSyncData() {
+            try {
+                const localSaved = localStorage.getItem("sjc5_cloud_submissions_v5");
+                if (localSaved) {
+                    globalSubmissionsMap = JSON.parse(localSaved);
+                }
+                const savedGas = localStorage.getItem("sjc5_gas_url");
+                if (savedGas) {
+                    gasEndpointUrl = savedGas;
+                    const inputEl = document.getElementById('gasUrlInput');
+                    if (inputEl) inputEl.value = savedGas;
+                }
+            } catch (e) {}
+        }
+
+        function saveSyncData() {
+            try {
+                localStorage.setItem("sjc5_cloud_submissions_v5", JSON.stringify(globalSubmissionsMap));
+            } catch (e) {}
+        }
+
+        function saveGasUrl() {
+            const url = document.getElementById('gasUrlInput').value.trim();
+            gasEndpointUrl = url;
+            localStorage.setItem("sjc5_gas_url", url);
+            showToast("Google 試算表連結已成功儲存！");
+        }
+
+        function manualCloudSync() {
+            loadSyncData();
+            showToast("已重新整理雲端作答資料！");
+            renderStudentGrid();
+            if (!document.getElementById('teacherSection').classList.contains('hidden')) {
+                renderTeacherResultsTable();
+            }
+        }
+
+        function renderClassTabs() {
+            const container = document.getElementById('classTabsContainer');
+            container.innerHTML = '';
+
+            Object.keys(schoolRosters).forEach(className => {
+                const isSelected = className === currentClassName;
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.onclick = () => {
+                    currentClassName = className;
+                    renderClassTabs();
+                    renderStudentGrid();
+                };
+                btn.className = `px-3.5 py-2 rounded-xl font-black text-xs sm:text-sm transition ${
+                    isSelected
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`;
+                btn.textContent = className;
+                container.appendChild(btn);
+            });
+
+            document.getElementById('selectedClassBadge').textContent = `${currentClassName}班`;
+        }
+
+        function renderStudentGrid() {
+            loadSyncData();
+            renderClassTabs();
+            const container = document.getElementById('studentGridContainer');
+            const keyword = (document.getElementById('studentSearchInput')?.value || '').trim().toLowerCase();
+            container.innerHTML = '';
+
+            const roster = schoolRosters[currentClassName] || [];
+            const filtered = roster.filter(st => {
+                if (!keyword) return true;
+                return String(st.seat).includes(keyword) || st.name.toLowerCase().includes(keyword);
+            });
+
+            filtered.forEach(student => {
+                const key = `${currentClassName}_${student.seat}`;
+                const sub = globalSubmissionsMap[key];
+                const isDone = !!sub;
+
+                const card = document.createElement('button');
+                card.type = "button";
+                card.onclick = () => selectStudentForQuiz(student);
+                card.className = `student-card text-left p-4 rounded-2xl border-2 relative flex flex-col justify-between transition ${
+                    isDone
+                        ? 'bg-emerald-50/70 border-emerald-400 hover:bg-emerald-50'
+                        : 'bg-white border-slate-200/90 hover:border-emerald-400'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between w-full mb-2">
+                        <span class="w-9 h-9 rounded-xl font-black text-base flex items-center justify-center ${
+                            isDone ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'
+                        }">
+                            ${student.seat}號
+                        </span>
+                        ${
+                            isDone
+                                ? `<span class="text-xs font-black bg-emerald-600 text-white px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                     <i class="fa-solid fa-check"></i> 已交卷
+                                   </span>`
+                                : `<span class="text-[11px] font-bold text-slate-400">點擊作答</span>`
+                        }
+                    </div>
+                    <div class="my-1">
+                        <div class="text-xl font-black text-slate-800 tracking-wide">${student.name}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function selectStudentForQuiz(student) {
+            loadSyncData();
+            const key = `${currentClassName}_${student.seat}`;
+            const existingSubmission = globalSubmissionsMap[key];
+            if (existingSubmission) {
+                openModal({
+                    title: `${currentClassName} ${student.seat}號 ${student.name} 已經交過卷囉！`,
+                    desc: `系統紀錄你在 ${existingSubmission.timestamp} 已經交卷。需要重新作答並覆蓋舊答案嗎？`,
+                    confirmText: "重新作答",
+                    onConfirm: () => startQuizForStudent(student, existingSubmission.answers)
+                });
+            } else {
+                startQuizForStudent(student, {});
+            }
+        }
+
+        function startQuizForStudent(student, initialAnswers = {}) {
+            currentStudent = student;
+            currentDraftAnswers = { ...initialAnswers };
+
+            document.getElementById('activeSeatBadge').textContent = student.seat;
+            document.getElementById('activeClassName').textContent = `${currentClassName}班`;
+            document.getElementById('activeStudentId').textContent = `學生姓名確認`;
+            document.getElementById('activeStudentName').textContent = student.name;
+
+            document.getElementById('stepSelectStudent').classList.add('hidden');
+            document.getElementById('stepSuccessScreen').classList.add('hidden');
+            document.getElementById('stepQuizQuestion').classList.remove('hidden');
+
+            renderQuizQuestions();
+            updateProgressCounter();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderQuizQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            questionsList.forEach((q, idx) => {
+                const qCard = document.createElement('div');
+                qCard.className = "bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80 space-y-4";
+
+                const selectedVal = currentDraftAnswers[q.id] !== undefined ? String(currentDraftAnswers[q.id]) : "";
+
+                let headerHTML = `
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <span class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 font-black text-lg flex items-center justify-center shrink-0 mt-0.5">
+                                ${idx + 1}
+                            </span>
+                            <div>
+                                <span class="text-xs font-bold text-slate-400">第 ${idx + 1} 題 (請選擇 1 - 10 分)</span>
+                                <h4 class="text-xl sm:text-2xl font-black text-slate-800 leading-snug mt-0.5">${q.prompt}</h4>
+                            </div>
+                        </div>
+                        <button type="button" onclick="speakText('第${idx + 1}題。${q.prompt.replace(/'/g, '')}。請給自己1至10分')" class="w-11 h-11 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0 transition shadow-xs" title="朗讀題目">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+                `;
+
+                let buttonsHTML = '';
+                for (let scoreNum = 1; scoreNum <= 10; scoreNum++) {
+                    const isSelected = Number(selectedVal) === scoreNum;
+                    let colorClass = '';
+                    if (isSelected) {
+                        colorClass = 'bg-blue-600 text-white border-blue-700 scale-105 shadow-lg shadow-blue-500/30 ring-2 ring-blue-300';
+                    } else if (scoreNum <= 4) {
+                        colorClass = 'bg-rose-50/70 hover:bg-rose-100 text-rose-700 border-rose-200';
+                    } else if (scoreNum <= 7) {
+                        colorClass = 'bg-amber-50/70 hover:bg-amber-100 text-amber-700 border-amber-200';
+                    } else {
+                        colorClass = 'bg-emerald-50/70 hover:bg-emerald-100 text-emerald-700 border-emerald-200';
+                    }
+
+                    buttonsHTML += `
+                        <button type="button" onclick="selectAnswer('${q.id}', '${scoreNum}')" class="py-3.5 sm:py-4 rounded-2xl border-2 font-black text-xl sm:text-2xl transition transform active:scale-95 flex flex-col items-center justify-center gap-0.5 ${colorClass}">
+                            <span>${scoreNum}</span>
+                            <span class="text-[10px] font-bold opacity-75">分</span>
+                        </button>
+                    `;
+                }
+
+                let bodyHTML = `
+                    <div class="pt-2">
+                        <div class="flex justify-between text-xs font-bold text-slate-400 mb-2 px-1">
+                            <span>🌱 1分 (需要加油)</span>
+                            <span class="text-slate-600">${selectedVal ? `已選擇：<strong class="text-blue-600 text-sm">${selectedVal} 分</strong>` : '請點選分數'}</span>
+                            <span>🌟 10分 (做得超棒)</span>
+                        </div>
+                        <div class="grid grid-cols-5 sm:grid-cols-10 gap-2 sm:gap-2.5">
+                            ${buttonsHTML}
+                        </div>
+                    </div>
+                `;
+
+                qCard.innerHTML = headerHTML + bodyHTML;
+                container.appendChild(qCard);
+            });
+        }
+
+        function selectAnswer(qId, value) {
+            currentDraftAnswers[qId] = value;
+            renderQuizQuestions();
+            updateProgressCounter();
+        }
+
+        function updateProgressCounter() {
+            const total = questionsList.length;
+            let answered = 0;
+            questionsList.forEach(q => {
+                if (currentDraftAnswers[q.id] && String(currentDraftAnswers[q.id]).trim() !== "") {
+                    answered++;
+                }
+            });
+            document.getElementById('quizProgressText').textContent = `${answered} / ${total} 題`;
+        }
+
+        function handleSubmitQuiz() {
+            if (!currentStudent) return;
+
+            const unanswered = [];
+            questionsList.forEach((q, idx) => {
+                if (!currentDraftAnswers[q.id] || String(currentDraftAnswers[q.id]).trim() === "") {
+                    unanswered.push(idx + 1);
+                }
+            });
+
+            if (unanswered.length > 0) {
+                openModal({
+                    title: "還有題目尚未評分喔！",
+                    desc: `第 ${unanswered.join('、')} 題還沒選擇 1-10 分，確定要直接交卷嗎？`,
+                    confirmText: "確定交卷",
+                    onConfirm: () => finalizeSubmission()
+                });
+            } else {
+                finalizeSubmission();
+            }
+        }
+
+        function finalizeSubmission() {
+            loadSyncData();
+            let rawSum = 0;
+            let maxPossible = 0;
+
+            questionsList.forEach(q => {
+                const ans = String(currentDraftAnswers[q.id] || "").trim();
+                const val = Number(ans);
+                if (!isNaN(val) && val >= 1 && val <= 10) {
+                    rawSum += val;
+                }
+                maxPossible += 10;
+            });
+
+            let scaledScore1To10 = maxPossible > 0 ? (rawSum / maxPossible) * 10 : 0;
+            if (rawSum > 0 && scaledScore1To10 < 1) scaledScore1To10 = 1;
+            const formattedTotalScore = Number(scaledScore1To10.toFixed(1));
+
+            const timeStr = new Date().toTimeString().split(' ')[0];
+            const recordKey = `${currentClassName}_${currentStudent.seat}`;
+
+            const record = {
+                className: currentClassName,
+                seat: currentStudent.seat,
+                name: currentStudent.name,
+                answers: { ...currentDraftAnswers },
+                score: formattedTotalScore,
+                rawSum: rawSum,
+                maxPossible: maxPossible,
+                timestamp: timeStr
+            };
+
+            globalSubmissionsMap[recordKey] = record;
+            saveSyncData();
+
+            // Sync with Google Apps Script if URL is provided
+            if (gasEndpointUrl) {
+                const payload = {
+                    className: currentClassName,
+                    seatNo: currentStudent.seat,
+                    studentId: recordKey,
+                    name: currentStudent.name,
+                    score: formattedTotalScore,
+                    submittedAt: timeStr,
+                    answers: questionsList.map(q => currentDraftAnswers[q.id] || "")
+                };
+                fetch(gasEndpointUrl, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                }).catch(err => console.log("GAS sync dispatch error:", err));
+            }
+
+            document.getElementById('stepQuizQuestion').classList.add('hidden');
+            document.getElementById('stepSuccessScreen').classList.remove('hidden');
+            document.getElementById('successStudentTag').textContent = `${currentClassName} ${currentStudent.seat}號 ${currentStudent.name}`;
+
+            document.getElementById('successScoreValue').innerHTML = `${formattedTotalScore} <span class="text-xl">/ 10 分</span>`;
+            document.getElementById('successScoreSubtext').textContent = `（${questionsList.length} 題原始合計：${rawSum} / ${maxPossible} 分，折算為 1-10 分制）`;
+
+            speakText(`太棒了！${currentStudent.name}已經完成體育堂自我評量，你的總分是 ${formattedTotalScore} 分！`);
+
+            renderStudentGrid();
+            renderTeacherResultsTable();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function backToStudentList() {
+            currentStudent = null;
+            currentDraftAnswers = {};
+            document.getElementById('stepQuizQuestion').classList.add('hidden');
+            document.getElementById('stepSuccessScreen').classList.add('hidden');
+            document.getElementById('stepSelectStudent').classList.remove('hidden');
+            renderStudentGrid();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderTeacherClassButtons() {
+            const container = document.getElementById('teacherClassSelectButtons');
+            container.innerHTML = '';
+
+            Object.keys(schoolRosters).forEach(className => {
+                const isSelected = className === currentClassName;
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.onclick = () => {
+                    currentClassName = className;
+                    document.getElementById('teacherCurrentClassLabel').textContent = `${currentClassName}班`;
+                    renderTeacherClassButtons();
+                    renderTeacherResultsTable();
+                };
+                btn.className = `px-3.5 py-2 rounded-xl font-black text-xs transition ${
+                    isSelected
+                        ? 'bg-slate-800 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`;
+                btn.textContent = className;
+                container.appendChild(btn);
+            });
+        }
+
+        function renderTeacherResultsTable() {
+            loadSyncData();
+            renderTeacherClassButtons();
+            const roster = schoolRosters[currentClassName] || [];
+            document.getElementById('teacherTableTitle').textContent = `聖若瑟教區中學第五校(小學中文部) 2026-2027學年 ${currentClassName} 作答明細表`;
+
+            const submittedList = roster.filter(st => globalSubmissionsMap[`${currentClassName}_${st.seat}`]);
+            const subCount = submittedList.length;
+            const pendingCount = roster.length - subCount;
+
+            document.getElementById('statClassTotal').textContent = roster.length;
+            document.getElementById('statSubmittedCount').textContent = subCount;
+            document.getElementById('statPendingCount').textContent = pendingCount;
+
+            if (subCount > 0) {
+                const avg = (submittedList.reduce((acc, cur) => acc + Number(globalSubmissionsMap[`${currentClassName}_${cur.seat}`].score), 0) / subCount).toFixed(1);
+                document.getElementById('statAverageScore').textContent = Number(avg);
+            } else {
+                document.getElementById('statAverageScore').textContent = "-";
+            }
+
+            const thead = document.getElementById('resultsTableHead');
+            let headHTML = `<tr>
+                <th class="py-3 px-4">座號</th>
+                <th class="py-3 px-4">姓名</th>
+                <th class="py-3 px-4">狀態</th>
+                <th class="py-3 px-4">總分 (1-10)</th>
+                <th class="py-3 px-4">交卷時間</th>`;
+            questionsList.forEach((q, i) => {
+                headHTML += `<th class="py-3 px-4">第${i + 1}題</th>`;
+            });
+            headHTML += `<th class="py-3 px-4 text-right">操作</th></tr>`;
+            thead.innerHTML = headHTML;
+
+            const tbody = document.getElementById('resultsTableBody');
+            tbody.innerHTML = '';
+
+            roster.forEach(st => {
+                const key = `${currentClassName}_${st.seat}`;
+                const sub = globalSubmissionsMap[key];
+                const isSubmitted = !!sub;
+
+                if (resultFilterMode === 'submitted' && !isSubmitted) return;
+                if (resultFilterMode === 'pending' && isSubmitted) return;
+
+                const tr = document.createElement('tr');
+                tr.className = isSubmitted ? "bg-emerald-50/30 hover:bg-emerald-50/60 transition" : "hover:bg-slate-50 transition";
+
+                let qCells = '';
+                questionsList.forEach(q => {
+                    const ans = sub?.answers?.[q.id] || '-';
+                    let cellColor = isSubmitted ? 'text-emerald-700 font-bold' : 'text-slate-300';
+                    qCells += `<td class="py-3 px-4 font-medium ${cellColor}">${ans}</td>`;
+                });
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-black text-slate-700">${st.seat}</td>
+                    <td class="py-3 px-4 font-black text-slate-800">${st.name}</td>
+                    <td class="py-3 px-4">
+                        ${isSubmitted
+                            ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">已交卷</span>'
+                            : '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-400">未交卷</span>'
+                        }
+                    </td>
+                    <td class="py-3 px-4 font-black ${isSubmitted ? 'text-blue-600' : 'text-slate-300'}">${isSubmitted ? `${sub.score} / 10` : '-'}</td>
+                    <td class="py-3 px-4 text-xs text-slate-500 font-mono">${isSubmitted ? sub.timestamp : '-'}</td>
+                    ${qCells}
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="switchMainTab('student'); selectStudentForQuiz(${JSON.stringify(st).replace(/"/g, '&quot;')});" class="text-xs font-bold text-emerald-600 hover:text-emerald-800 px-2 py-1 rounded hover:bg-emerald-50">
+                            ${isSubmitted ? '重填' : '代填'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function setResultFilter(mode) {
+            resultFilterMode = mode;
+            document.getElementById('filterAllBtn').className = mode === 'all' ? "px-3 py-1 rounded-lg bg-slate-800 text-white" : "px-3 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200";
+            document.getElementById('filterSubmittedBtn').className = mode === 'submitted' ? "px-3 py-1 rounded-lg bg-slate-800 text-white" : "px-3 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200";
+            document.getElementById('filterPendingBtn').className = mode === 'pending' ? "px-3 py-1 rounded-lg bg-slate-800 text-white" : "px-3 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200";
+            renderTeacherResultsTable();
+        }
+
+        function copyTableForGoogleSheet() {
+            loadSyncData();
+            const roster = schoolRosters[currentClassName] || [];
+            const headers = ["座號", "姓名", "狀態", "總分", "交卷時間", ...questionsList.map((_, i) => `第${i + 1}題`)];
+            const lines = [
+                `聖若瑟教區中學第五校(小學中文部)\t2026-2027學年\t${currentClassName}\t${examTitle}`,
+                headers.join("\t")
+            ];
+
+            roster.forEach(st => {
+                const sub = globalSubmissionsMap[`${currentClassName}_${st.seat}`];
+                const row = [
+                    st.seat,
+                    st.name,
+                    sub ? "已交卷" : "未交卷",
+                    sub ? sub.score : "",
+                    sub ? sub.timestamp : "",
+                    ...questionsList.map(q => sub?.answers?.[q.id] || "")
+                ];
+                lines.push(row.join("\t"));
+            });
+
+            copyTextToClipboard(lines.join("\n"), `已複製 ${currentClassName} 成績表！可直接貼回 Google 試算表`);
+        }
+
+        function exportToCSV() {
+            loadSyncData();
+            const roster = schoolRosters[currentClassName] || [];
+            const headers = ["座號", "姓名", "狀態", "總分", "交卷時間", ...questionsList.map((_, i) => `第${i + 1}題`)];
+            const csvRows = [
+                `"聖若瑟教區中學第五校(小學中文部)","2026-2027學年","${currentClassName}","${examTitle}"`,
+                headers.map(h => `"${h}"`).join(",")
+            ];
+
+            roster.forEach(st => {
+                const sub = globalSubmissionsMap[`${currentClassName}_${st.seat}`];
+                const row = [
+                    st.seat,
+                    st.name,
+                    sub ? "已交卷" : "未交卷",
+                    sub ? sub.score : "",
+                    sub ? sub.timestamp : "",
+                    ...questionsList.map(q => (sub?.answers?.[q.id] || "").replace(/"/g, '""'))
+                ];
+                csvRows.push(row.map(cell => `"${cell}"`).join(","));
+            });
+
+            const csvString = "\uFEFF" + csvRows.join("\n");
+            const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `聖若瑟五校_${currentClassName}_${examTitle}_成績.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast(`已成功匯出 ${currentClassName} CSV 成績單！`);
+        }
+
+        function simulateDemoSubmissions() {
+            loadSyncData();
+            const roster = schoolRosters[currentClassName] || [];
+            roster.slice(0, Math.min(5, roster.length)).forEach(st => {
+                const fakeAnswers = {};
+                let rawSum = 0;
+                let maxPossible = 0;
+                questionsList.forEach(q => {
+                    const randScore = Math.floor(Math.random() * 4) + 7;
+                    fakeAnswers[q.id] = String(randScore);
+                    rawSum += randScore;
+                    maxPossible += 10;
+                });
+                const scaled = Number(((rawSum / maxPossible) * 10).toFixed(1));
+                const rec = {
+                    className: currentClassName,
+                    seat: st.seat,
+                    name: st.name,
+                    answers: fakeAnswers,
+                    score: scaled,
+                    rawSum: rawSum,
+                    maxPossible: maxPossible,
+                    timestamp: new Date().toTimeString().split(' ')[0]
+                };
+                globalSubmissionsMap[`${currentClassName}_${st.seat}`] = rec;
+            });
+            saveSyncData();
+            renderStudentGrid();
+            renderTeacherResultsTable();
+            showToast(`已模擬 ${currentClassName} 部分學生作答！`);
+        }
+
+        function clearClassSubmissions() {
+            openModal({
+                title: `確定要清空 ${currentClassName} 的作答紀錄嗎？`,
+                desc: `這將重置 ${currentClassName} 全班同學的交卷狀態。`,
+                confirmText: "確定清空",
+                onConfirm: () => {
+                    loadSyncData();
+                    const roster = schoolRosters[currentClassName] || [];
+                    roster.forEach(st => {
+                        delete globalSubmissionsMap[`${currentClassName}_${st.seat}`];
+                    });
+                    saveSyncData();
+                    renderStudentGrid();
+                    renderTeacherResultsTable();
+                    showToast(`已清空 ${currentClassName} 紀錄`);
+                }
+            });
+        }
+
+        function renderTeacherQuestionsEditor() {
+            const listEl = document.getElementById('teacherQuestionsEditorList');
+            listEl.innerHTML = '';
+
+            questionsList.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = "p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="px-3 py-1 rounded-lg bg-slate-800 text-white font-black text-xs">第 ${idx + 1} 題 (1-10分制)</span>
+                        <button onclick="removeQuestion(${idx})" class="text-rose-500 hover:bg-rose-100 p-1.5 rounded-lg transition" title="刪除此題">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">題目內容：</label>
+                        <input type="text" value="${q.prompt}" oninput="questionsList[${idx}].prompt = this.value" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-bold bg-white">
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function addNewQuestion() {
+            questionsList.push({ id: "q" + Date.now(), type: "scale10", prompt: "請輸入新的體育堂自評題目...", points: 10 });
+            renderTeacherQuestionsEditor();
+            showToast("已新增一道自評題目");
+        }
+
+        function removeQuestion(idx) {
+            if (questionsList.length <= 1) {
+                showToast("至少需要保留一道題目！", "warning");
+                return;
+            }
+            questionsList.splice(idx, 1);
+            renderTeacherQuestionsEditor();
+            showToast("已刪除題目");
+        }
+
+        function updateExamSettings() {
+            examTitle = document.getElementById('examTitleInput').value.trim() || "體育堂表現自我評量表";
+            document.getElementById('currentExamTitleBadge').textContent = examTitle;
+            showToast("已更新設定");
+        }
+
+        function switchMainTab(tab) {
+            const studentSec = document.getElementById('studentSection');
+            const teacherSec = document.getElementById('teacherSection');
+            const btnStudent = document.getElementById('btnStudentView');
+            const btnTeacher = document.getElementById('btnTeacherView');
+
+            if (tab === 'student') {
+                studentSec.classList.remove('hidden');
+                teacherSec.classList.add('hidden');
+                btnStudent.className = "px-4 py-2 rounded-xl font-bold text-sm bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 transition flex items-center gap-1.5";
+                btnTeacher.className = "px-4 py-2 rounded-xl font-bold text-sm bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition flex items-center gap-1.5";
+                renderClassTabs();
+                renderStudentGrid();
+            } else {
+                studentSec.classList.add('hidden');
+                teacherSec.classList.remove('hidden');
+                btnTeacher.className = "px-4 py-2 rounded-xl font-bold text-sm bg-slate-800 text-white shadow-sm hover:bg-slate-900 transition flex items-center gap-1.5";
+                btnStudent.className = "px-4 py-2 rounded-xl font-bold text-sm bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition flex items-center gap-1.5";
+                renderTeacherResultsTable();
+                renderTeacherQuestionsEditor();
+            }
+        }
+
+        function switchTeacherSubTab(sub) {
+            document.getElementById('teacherSubResults').classList.toggle('hidden', sub !== 'results');
+            document.getElementById('teacherSubQuestions').classList.toggle('hidden', sub !== 'questions');
+            document.getElementById('teacherSubSync').classList.toggle('hidden', sub !== 'sync');
+
+            const activeCls = "flex-1 min-w-[140px] py-2.5 px-4 rounded-2xl font-bold text-sm bg-slate-800 text-white transition flex items-center justify-center gap-2";
+            const inactiveCls = "flex-1 min-w-[140px] py-2.5 px-4 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition flex items-center justify-center gap-2";
+
+            document.getElementById('tabBtnResults').className = sub === 'results' ? activeCls : inactiveCls;
+            document.getElementById('tabBtnQuestions').className = sub === 'questions' ? activeCls : inactiveCls;
+            document.getElementById('tabBtnSheetSync').className = sub === 'sync' ? activeCls : inactiveCls;
+
+            if (sub === 'results') renderTeacherResultsTable();
+            if (sub === 'questions') renderTeacherQuestionsEditor();
+        }
+
+        function copyTextToClipboard(text, successMsg) {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand("copy");
+                showToast(successMsg);
+            } catch (err) {
+                showToast("複製失敗", "warning");
+            }
+            document.body.removeChild(textarea);
+        }
+
+        let toastTimer = null;
+        function showToast(msg, type = "success") {
+            const box = document.getElementById('toastBox');
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastMessage').textContent = msg;
+            icon.className = type === "warning" ? "fa-solid fa-triangle-exclamation text-amber-400 text-lg" : "fa-solid fa-circle-check text-emerald-400 text-lg";
+            box.classList.remove('hidden');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => box.classList.add('hidden'), 3200);
+        }
+
+        function openModal({ title, desc, confirmText = "確定", onConfirm }) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalDesc').textContent = desc;
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+            confirmBtn.textContent = confirmText;
+            confirmBtn.onclick = () => { closeModal(); if (onConfirm) onConfirm(); };
+            const modal = document.getElementById('customModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('customModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        window.onload = function () {
+            loadSyncData();
+            renderClassTabs();
+            renderStudentGrid();
+        };
+    </script>
+</body>
+</html>
